@@ -1,0 +1,28 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SERVER_BASE_URL = os.environ.get("SERVER_BASE_URL")
+
+AUTH_SECRET_KEY = os.environ.get("AUTH_SECRET_KEY")
+AUTH_ALGORITHM = os.environ.get("AUTH_ALGORITHM")
+AUTH_ACCESS_TOKEN_EXPIRE_MINUTES = os.environ.get("AUTH_ACCESS_TOKEN_EXPIRE_MINUTES")
+
+SQLALCHEMY_DATABASE_URL = os.environ.get("SQLALCHEMY_DATABASE_URL")
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
+CELERY_BACKEND = os.environ.get("CELERY_BACKEND")
+
+GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
+GITHUB_REDIRECT_URI = os.environ.get("GITHUB_REDIRECT_URI")
+GITHUB_REDIRECT_FRONTEND = os.environ.get("GITHUB_REDIRECT_FRONTEND")
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+
+
+
+
+
