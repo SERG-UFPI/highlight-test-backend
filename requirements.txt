@@ -11,3 +11,4 @@ scipy
 PyJWT
 pandas
 requests
+celery
