@@ -10,7 +10,7 @@ def build_url(endpoint: str) -> str:
     :param endpoint:
     :return:
     """
-    return f"{SERVER_BASE_URL}process/{endpoint}/"
+    return f"{SERVER_BASE_URL}/process/{endpoint}/"
 
 async def post_start_process(process_name: str, pipeline_id: str):
     """

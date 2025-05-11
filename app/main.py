@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 
 from . import models
+from .config import FRONTEND_URL
 from .constants import *
 from .routers.dashboards import general
 from .database import engine
@@ -17,8 +18,8 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",
-    "http://localhost:3000/*"
+    FRONTEND_URL,
+    FRONTEND_URL+"/*"
 ]
 
 app.add_middleware(

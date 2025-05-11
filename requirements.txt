@@ -13,3 +13,4 @@ pandas
 requests
 celery
 pydriller
+python-dotenv

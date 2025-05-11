@@ -13,7 +13,10 @@ from app.config import (
     GITHUB_CLIENT_SECRET,
     GITHUB_REDIRECT_URI,
     GITHUB_REDIRECT_FRONTEND,
-    GEMINI_API_KEY
+    GEMINI_API_KEY,
+    FRONTEND_URL,
+    SERVER_HOST,
+    SERVER_PORT
 )
 
 class TestConfig(unittest.TestCase):
@@ -30,7 +33,11 @@ class TestConfig(unittest.TestCase):
         "GITHUB_CLIENT_SECRET": "test_client_secret",
         "GITHUB_REDIRECT_URI": "http://localhost:8000/callback",
         "GITHUB_REDIRECT_FRONTEND": "http://localhost:3000",
-        "GEMINI_API_KEY": "test_gemini_api_key"
+        "GEMINI_API_KEY": "test_gemini_api_key",
+        "FRONTEND_URL": "http://localhost:3000",
+        "SERVER_HOST": "127.0.0.1",
+        "SERVER_PORT": "8000"
+
     })
     def test_environment_variables(self):
         self.assertIsNotNone(SERVER_BASE_URL)
@@ -45,6 +52,9 @@ class TestConfig(unittest.TestCase):
         self.assertIsNotNone(GITHUB_REDIRECT_URI)
         self.assertIsNotNone(GITHUB_REDIRECT_FRONTEND)
         self.assertIsNotNone(GEMINI_API_KEY)
+        self.assertIsNotNone(FRONTEND_URL)
+        self.assertIsNotNone(SERVER_HOST)
+        self.assertIsNotNone(SERVER_PORT)
 
 if __name__ == "__main__":
     unittest.main()

@@ -21,6 +21,12 @@ GITHUB_REDIRECT_FRONTEND = os.environ.get("GITHUB_REDIRECT_FRONTEND")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL")
+
+SERVER_HOST = os.environ.get("SERVER_HOST")
+
+SERVER_PORT = os.environ.get("SERVER_PORT")
+
 
 
 
