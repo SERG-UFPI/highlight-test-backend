@@ -10,3 +10,4 @@ numpy
 scipy
 PyJWT
 pandas
+requests
