@@ -12,3 +12,4 @@ PyJWT
 pandas
 requests
 celery
+pydriller
