@@ -7,8 +7,8 @@ from app.helpers.user_utils import get_username_from_token
 from app.security import get_token, can_create, can_edit, can_delete
 
 router = APIRouter(
-    prefix="/crud/additionalData",
-    tags=["additionalData"],
+    prefix="/crud/additional_data",
+    tags=["additional_data"],
     responses={404: {"description": "AdditionalData not found"}},
 )
 
