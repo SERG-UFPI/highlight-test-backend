@@ -14,3 +14,4 @@ requests
 celery
 pydriller
 python-dotenv
+httpx

@@ -25,7 +25,7 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL")
 
 SERVER_HOST = os.environ.get("SERVER_HOST")
 
-SERVER_PORT = os.environ.get("SERVER_PORT")
+SERVER_PORT = int(os.environ.get("SERVER_PORT", 8000))
 
 
 
