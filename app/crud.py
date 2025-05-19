@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, func, desc
 from sqlalchemy.orm import Session
 
 from . import models, schemas
@@ -8,7 +8,8 @@ from datetime import datetime
 
 from .enums import UserStatusEnum
 from .helpers.user_utils import hash_password
-
+from .models import Commit, Competence, BaseItem, TestData, CodeMetrics, ProjectDimension, CommitMessageItem, \
+    MaintenanceActivitySummary, Correlation, Insights, CodeDistributionDetail
 
 # repository
 def get_repository_by_id(db: Session, repository_id: str):
@@ -105,7 +106,7 @@ def delete_additional_data(db: Session, additional_data_id: str):
     db.commit()
     return True
 
-#pipeline
+# pipeline
 def get_pipeline_by_id(db: Session, pipeline_id: str):
     return db.query(models.Pipeline).filter(models.Pipeline.id == pipeline_id).first()
 
@@ -113,7 +114,7 @@ def get_pipelines(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Pipeline).order_by(models.Pipeline.created_at.desc()).offset(skip).limit(limit).all()
 
 def get_pipelines_by_repository(db: Session, repository_id: str, skip: int = 0, limit: int = 100):
-    return db.query(models.Pipeline).filter(models.Pipeline.repository == repository_id).offset(skip).limit(limit).all()
+    return db.query(models.Pipeline).filter(models.Pipeline.repository == repository_id).order_by(models.Pipeline.created_at.desc()).offset(skip).limit(limit).all()
 
 def create_pipeline(db: Session, pipeline: schemas.PipelineCreate):
     db_pipeline = models.Pipeline(**pipeline.dict())
@@ -209,4 +210,187 @@ def save_integration_user(db: Session, username: str, github_token: str):
 def get_user_by_token_active(db: Session, token: str):
     return db.query(models.User).filter(models.User.github_token == token, models.User.status == UserStatusEnum.ACTIVE, models.User.github_user == True).first()
 
+# commit
+def create_commit(db: Session, commit_data: dict):
+    db_commit = Commit(**commit_data)
+    db.add(db_commit)
+
+    db.commit()
+    db.refresh(db_commit)
+
+    return db_commit
+
+def get_commits_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.Commit).filter(models.Commit.pipeline_id == pipeline_id).order_by(models.Commit.created_at.asc()).all()
+
+def exits_commits_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.Commit).filter(models.Commit.pipeline_id == pipeline_id).first() is not None
+
+def get_commits_grouped_by_author(db: Session, pipeline_id: str):
+    return (db.query(models.Commit.author_name, func.count(models.Commit.id).label("commit_count"))
+            .filter(models.Commit.pipeline_id == pipeline_id)
+            .group_by(models.Commit.author_name)
+            .order_by(desc(func.count(models.Commit.id)))
+            .all())
+
+# competence
+def create_competence(db: Session, competence_data: dict):
+    db_competence = Competence(**competence_data)
+    db.add(db_competence)
+
+    db.commit()
+    db.refresh(db_competence)
+
+    return db_competence
+
+def get_competences_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.Competence).filter(models.Competence.pipeline_id == pipeline_id).order_by(models.Competence.created_at.asc()).all()
+
+def exits_competences_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.Competence).filter(models.Competence.pipeline_id == pipeline_id).first() is not None
+
+# base_item
+def create_base_item(db: Session, base_item_data: dict):
+    db_base_item = BaseItem(**base_item_data)
+    db.add(db_base_item)
+
+    db.commit()
+    db.refresh(db_base_item)
+
+    return db_base_item
+
+def get_base_items_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.BaseItem).filter(models.BaseItem.pipeline_id == pipeline_id).order_by(models.BaseItem.created_at.asc()).all()
+
+def exits_base_items_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.BaseItem).filter(models.BaseItem.pipeline_id == pipeline_id).first() is not None
+
+# test_data
+def create_test_data(db: Session, test_data: dict):
+    db_test_data = TestData(**test_data)
+    db.add(db_test_data)
+
+    db.commit()
+    db.refresh(db_test_data)
+
+    return db_test_data
+
+def get_test_datas_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.TestData).filter(models.TestData.pipeline_id == pipeline_id).order_by(models.TestData.commit_order.asc(), models.TestData.created_at.asc()).all()
+
+def exits_test_datas_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.TestData).filter(models.TestData.pipeline_id == pipeline_id).first() is not None
+
+# code_metrics
+def create_code_metrics(db: Session, code_metrics: dict):
+    db_code_metrics = CodeMetrics(**code_metrics)
+    db.add(db_code_metrics)
+
+    db.commit()
+    db.refresh(db_code_metrics)
+
+    return db_code_metrics
+
+def get_code_metrics_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.CodeMetrics).filter(models.CodeMetrics.pipeline_id == pipeline_id).order_by(models.CodeMetrics.created_at.asc()).all()
+
+def exits_code_metrics_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.CodeMetrics).filter(models.CodeMetrics.pipeline_id == pipeline_id).first() is not None
+
+# project_dimension
+def create_project_dimension(db: Session, project_dimension: dict):
+    db_project_dimension = ProjectDimension(**project_dimension)
+    db.add(db_project_dimension)
+
+    db.commit()
+    db.refresh(db_project_dimension)
+
+    return db_project_dimension
+
+def get_project_dimension_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.ProjectDimension).filter(models.ProjectDimension.pipeline_id == pipeline_id).order_by(models.ProjectDimension.created_at.asc()).first()
+
+def exits_project_dimension_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.ProjectDimension).filter(models.ProjectDimension.pipeline_id == pipeline_id).first() is not None
+
+# commit_message_item
+def create_commit_message_item(db: Session, commit_message_item: dict):
+    db_commit_message_item = CommitMessageItem(**commit_message_item)
+    db.add(db_commit_message_item)
+
+    db.commit()
+    db.refresh(db_commit_message_item)
+
+    return db_commit_message_item
+
+def get_commit_message_items_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.CommitMessageItem).filter(models.CommitMessageItem.pipeline_id == pipeline_id).order_by(models.CommitMessageItem.created_at.asc()).all()
+
+def exits_commit_message_items_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.CommitMessageItem).filter(models.CommitMessageItem.pipeline_id == pipeline_id).first() is not None
+
+# maintenance_activity_summary
+def create_maintenance_activity_summary(db: Session, maintenance_activity_summary: dict):
+    db_maintenance_activity_summary = MaintenanceActivitySummary(**maintenance_activity_summary)
+    db.add(db_maintenance_activity_summary)
+
+    db.commit()
+    db.refresh(db_maintenance_activity_summary)
+
+    return db_maintenance_activity_summary
+
+def get_maintenance_activity_summary_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.MaintenanceActivitySummary).filter(models.MaintenanceActivitySummary.pipeline_id == pipeline_id).order_by(models.MaintenanceActivitySummary.created_at.asc()).first()
+
+def exits_maintenance_activity_summary_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.MaintenanceActivitySummary).filter(models.MaintenanceActivitySummary.pipeline_id == pipeline_id).first() is not None
+
+# correlation
+def create_correlation(db: Session, correlation: dict):
+    db_correlation = Correlation(**correlation)
+    db.add(db_correlation)
+
+    db.commit()
+    db.refresh(db_correlation)
+
+    return db_correlation
+
+def get_correlation_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.Correlation).filter(models.Correlation.pipeline_id == pipeline_id).order_by(models.Correlation.created_at.asc()).first()
+
+def exits_correlation_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.Correlation).filter(models.Correlation.pipeline_id == pipeline_id).first() is not None
+
+# code_distribution_details
+def create_code_detail(db: Session, detail_data: dict):
+    db_detail_data = CodeDistributionDetail(**detail_data)
+    db.add(db_detail_data)
+
+    db.commit()
+    db.refresh(db_detail_data)
+
+    return db_detail_data
+
+def get_code_distribution_details_by_pipeline_and_commit_order(db: Session, pipeline_id: str, commit_order: int):
+    return (db.query(models.CodeDistributionDetail)
+            .filter(models.CodeDistributionDetail.pipeline_id == pipeline_id,
+                    models.CodeDistributionDetail.commit_order == commit_order)
+            .order_by(models.CodeDistributionDetail.created_at.asc())
+            .all())
+
+# insights
+def create_insights(db: Session, insights: dict):
+    db_insights = Insights(**insights)
+    db.add(db_insights)
+
+    db.commit()
+    db.refresh(db_insights)
+
+    return db_insights
+
+def get_insights_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.Insights).filter(models.Insights.pipeline_id == pipeline_id).order_by(models.Insights.created_at.asc()).first()
+
+def exits_insights_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.Insights).filter(models.Insights.pipeline_id == pipeline_id).first() is not None
 

@@ -28,7 +28,7 @@ class TestMyProjectResult(unittest.TestCase):
             pushed_at="2023-01-02"
         )
         obj = MyProjectResult(row, pipeline_id="pipeline123")
-        self.assertEqual(obj.id, "ext123")
+        self.assertEqual(obj.id, "pipeline123")
         self.assertEqual(obj.name, "Test Project")
         self.assertEqual(obj.base_git, "test/test-project")
         self.assertEqual(obj.project_language, "Python")
@@ -72,7 +72,7 @@ class TestMyProjectResult(unittest.TestCase):
             pushed_at="2023-01-02"
         )
         obj = MyProjectResult(row, pipeline_id="pipeline123")
-        self.assertEqual(str(obj), "ext123\nTest Project\n")
+        self.assertEqual(str(obj), "pipeline123\nTest Project\n")
 
 if __name__ == "__main__":
     unittest.main()

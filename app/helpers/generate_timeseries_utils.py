@@ -1,7 +1,10 @@
 from datetime import datetime
 
+from app import crud
 from app.constants import *
-from app.helpers.utils import get_json, get_comma_separated_names, is_windows, parse_int
+from app.crud import get_test_datas_by_pipeline
+from app.helpers.utils import get_comma_separated_names, is_windows, parse_int
+from app.logger_config import logger
 
 
 def process_cloc_history(base_git_path, loc_path_log):
@@ -21,91 +24,53 @@ def process_cloc_history(base_git_path, loc_path_log):
         command = "cd {path_full_git} && cloc {path_full_git} --by-file --csv > {path_full_log}".format(
             path_full_git=base_git_path, path_full_log=path_full_log)
 
-    print(command)
+    logger.info(command)
     os.system(command)
 
-def get_files(project_id, commit_order, classify_test_based_on_function):
+def cloc_series(pipeline_id, classify_test_based_on_function, db, uses_external_id):
     """
-    Get the files from the git log.
-    :param project_id:
-    :param commit_order:
+    Process the cloc series for a given pipeline.
+    :param pipeline_id:
     :param classify_test_based_on_function:
+    :param db:
+    :param uses_external_id:
     :return:
     """
-    t_path = os.path.join(BASE_LOG_TEST_FILE, str(project_id), str(commit_order), str(project_id) + ".csv")
-
-    p_files = []
-    t_files = []
-
-    if not os.path.exists(t_path):
-        return {"p_files": p_files, "t_files": t_files}
-
-    with open(t_path, newline='', encoding="latin-1") as csv_file:
-        for csv_line in csv_file:
-            line_data = csv_line.split(',')
-            # tratar a ultima linha
-            if '\n' in line_data[0]:
-                continue
-
-            # tratar a ultima linha
-            if '\r' in line_data[0]:
-                continue
-
-            if len(line_data) < 5:
-                continue
-
-            base_git = line_data[0]
-            path_file = get_comma_separated_names(line_data, 5, 1, 2)
-
-            if classify_test_based_on_function:
-                is_test_file = line_data[-1]
-            else:
-                is_test_file = line_data[-3]
-
-            path_full_file = os.path.join(BASE_PROJECTS, project_id, base_git, path_file)
-
-            if parse_int(is_test_file) == 1:
-                t_files.append(path_full_file.replace('\\', '/').replace('//', '/'))
-
-            else:
-                p_files.append(path_full_file.replace('\\', '/').replace('//', '/'))
-
-    return {"p_files": p_files, "t_files": t_files}
-
-def cloc_series(project_id, classify_test_based_on_function):
-    """
-    Process the cloc series for a given git repository.
-    :param project_id:
-    :param classify_test_based_on_function:
-    :return:
-    """
-    print("{now} : BEGIN git log process_cloc: {path_git} \n".format(now=datetime.now(), path_git=project_id))
+    logger.info("{now} : BEGIN git log process_cloc: {path_git} \n".format(now=datetime.now(), path_git=pipeline_id))
 
     ploc_item = []
     tloc_item = []
 
-    revisions = get_json(os.path.join(BASE_LOG_REVISIONS, str(project_id) + '.json'))
+    base_itens = crud.get_base_items_by_pipeline(db, pipeline_id)
+    revisions = [revision.base_item for revision in base_itens]
+
     revision_length = len(revisions)
     commit_selected = range(revision_length)
+
+    test_datas = get_test_datas_by_pipeline(db, pipeline_id)
+
     for commit_order in commit_selected:
 
         ploc_sum = 0
         tloc_sum = 0
 
-        t_path = os.path.join(BASE_LOG_TEST_FILE, str(project_id), str(commit_order), str(project_id) + ".csv")
+        filtered_test_datas = [data for data in test_datas if data.commit_order == commit_order]
 
-        if not os.path.exists(t_path):
+        if filtered_test_datas is None or len(filtered_test_datas) == 0:
             ploc_item.append(ploc_sum)
             tloc_item.append(tloc_sum)
             continue
 
-        files_data = get_files(project_id, commit_order, classify_test_based_on_function)
+        if classify_test_based_on_function :
+            p_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.has_test_call != 1]
+            t_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.has_test_call == 1]
 
-        p_files = files_data["p_files"]
-        t_files = files_data["t_files"]
+        else:
+            p_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.is_test_file != 1]
+            t_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.is_test_file == 1]
 
         valid_cloc = False
-        opened_file = open(os.path.join(BASE_LOG_LOC, str(project_id), str(commit_order), 'cloc.log'), "r",
+        opened_file = open(os.path.join(BASE_LOG_LOC, str(pipeline_id), str(commit_order), 'cloc.log'), "r",
                            encoding="latin-1")
 
         for line in opened_file:
@@ -119,8 +84,14 @@ def cloc_series(project_id, classify_test_based_on_function):
             # language;filename;blank;comment;code;
             line_data = line.split(',')
 
+            language = line_data[0]
             path_query = get_comma_separated_names(line_data, 5, 1, 2).replace('\\', '/').replace('//', '/')
             value = parse_int(line_data[-1].replace('\n', ''))
+
+            if uses_external_id:
+                simple_name_path = path_query.rpartition(IMPORTED_PROJECTS_FOLDER_NAME + "/")[-1]
+            else:
+                simple_name_path = path_query.rpartition(str(pipeline_id) + "/")[-1]
 
             extension = path_query.rpartition(".")[-1]
             if extension not in FILE_EXTENSION_ACCEPTED:
@@ -128,10 +99,14 @@ def cloc_series(project_id, classify_test_based_on_function):
 
             if path_query in p_files:
                 ploc_sum = ploc_sum + value
+                crud.create_code_detail(db, {"language": language, "commit_order": commit_order, "pipeline_id": str(pipeline_id), "path": simple_name_path, "loc": value, "is_test_file": False})
+
                 continue
 
             if path_query in t_files:
                 tloc_sum = tloc_sum + value
+                crud.create_code_detail(db, {"language": language, "commit_order": commit_order, "pipeline_id": str(pipeline_id), "path": simple_name_path, "loc": value, "is_test_file": True})
+
                 continue
 
         ploc_item.append(ploc_sum)
@@ -139,6 +114,6 @@ def cloc_series(project_id, classify_test_based_on_function):
 
         opened_file.close()
 
-    print("{now} : END git log process_cloc: {path_git} \n".format(now=datetime.now(), path_git=str(project_id)))
+    logger.info("{now} : END git log process_cloc: {path_git} \n".format(now=datetime.now(), path_git=str(pipeline_id)))
 
     return [ploc_item, tloc_item]

@@ -3,12 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from scipy.stats import pearsonr
 from .. import schemas, crud
-from ..constants import *
 from ..database import get_db
 from ..dtos.my_project_result import MyProjectResult
 from ..enums import StatusEnum
+from ..helpers.co_evolution_utils import check_coevolution
 from ..schemas import StageEnum
-from app.helpers.utils import get_json, save_json
 from ..logger_config import *
 import warnings
 
@@ -50,19 +49,26 @@ def co_evolution_analysis(process: schemas.ProcessBase, db: Session = Depends(ge
 
         project_result = MyProjectResult(db_additional_data, pipeline_id)
 
-        production_code_list = get_json(os.path.join(BASE_LOG_CLOC, f"{project_result.id}_production_code_list.json"))
+        code_metrics = crud.get_code_metrics_by_pipeline(db, project_result.id)
 
-        if not production_code_list or 'timeseries' not in production_code_list[0]:
-            raise HTTPException(status_code=404, detail="Production code list or timeseries not found")
+        production_metric = next((metric for metric in code_metrics if metric.metric_type == 'production'), None)
 
-        test_code_list = get_json(os.path.join(BASE_LOG_CLOC, f"{project_result.id}_test_code_list.json"))
+        test_metric = next((metric for metric in code_metrics if metric.metric_type == 'test'), None)
 
-        if not test_code_list or 'timeseries' not in test_code_list[0]:
-            raise HTTPException(status_code=404, detail="Test code list or timeseries not found")
+        if not production_metric:
+            raise HTTPException(status_code=404, detail="No production metric found")
 
-        pcc_val = check_coevolution(production_code_list[0]['timeseries'], test_code_list[0]['timeseries'])
+        if not test_metric:
+            raise HTTPException(status_code=404, detail="No test metric found")
 
-        save_json(BASE_LOG_CO_EVOLUTION, str(project_result.id), {"pearson_correlation": pcc_val})
+        pcc_val = float(check_coevolution(production_metric.timeseries, test_metric.timeseries))
+
+        correlation = {
+            "pearson_correlation": pcc_val,
+            "pipeline_id": pipeline_id,
+        }
+
+        crud.create_correlation(db, correlation)
 
         logger.info(f"{datetime.now()} : END co_evolution_analysis pipeline_id {pipeline_id}")
 
@@ -81,17 +87,3 @@ def co_evolution_analysis(process: schemas.ProcessBase, db: Session = Depends(ge
 
     return {"pearson_correlation": pcc_val}
 
-def check_coevolution(series1, series2):
-    try:
-        with warnings.catch_warnings():
-            warnings.filterwarnings("error", category=RuntimeWarning)
-            return pearsonr(series1, series2)[0]
-    except ValueError as e:
-        print(f"ValueError: {e}")
-        return -1
-    except RuntimeWarning as e:
-        print(f"RuntimeWarning: {e}")
-        return -1
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        return -1

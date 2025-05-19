@@ -1,38 +1,39 @@
-import csv
 from datetime import datetime
+
+from .. import crud
 from ..constants import *
-from ..dtos.commit_maintenance_activities_result import CommitMaintenanceActivitiesResult
+from ..crud import get_commits_by_pipeline
 from ..libs.commit_classification_master.language_utils import match
 from ..libs.commit_classification_master.adaptive_model import is_adaptive, build_adaptive_action_regex
 from ..libs.commit_classification_master.corrective_model import is_fix,build_bug_fix_regex
 from ..libs.commit_classification_master.refactor_model import built_is_refactor, build_perfective_regex, build_refactor_regex
 import re
 
-def get_project_dimension_repo(project_result):
+from ..logger_config import logger
+
+
+def get_project_dimension_repo(project_result, db):
     """
-    Get the number of commits and authors from the repository.
+    Get the project dimension from the repository.
     :param project_result:
+    :param db:
     :return:
     """
-    print("{now} : BEGIN get_data_repo {base_git_path} \n".format(now=datetime.now(),
+
+    logger.info("{now} : BEGIN get_data_repo {base_git_path} \n".format(now=datetime.now(),
                                                                   base_git_path=str(project_result.id)))
 
-    if not os.path.exists(BASE_LOG_COMMITS + str(project_result.id) + '.csv'):
+    commits = get_commits_by_pipeline(db, str(project_result.id))
+
+    if commits is None or len(commits) == 0:
         return 0
 
-    # ["hash", "author", "committer", "date", "msg"]
-    m_file = open(BASE_LOG_COMMITS + str(project_result.id) + '.csv', 'r', encoding='latin-1')
-    commits_list = []
-    authors_list = []
-    for m_row in m_file:
-        row = m_row.split(";")
-        if len(row) > 5:
-            commits_list.append(row[0])
-            authors_list.append(row[1])
+    commits_list = [commit.hash for commit in commits]
+    authors_list = [commit.author_name for commit in commits]
 
     authors = set(authors_list)
 
-    print("{now} : END get_data_repo {base_git_path}\n".format(now=datetime.now(), base_git_path=str(project_result.id)))
+    logger.info("{now} : END get_data_repo {base_git_path}\n".format(now=datetime.now(), base_git_path=str(project_result.id)))
     return {"n_commits": len(commits_list), "n_authors": len(authors)}
 
 def get_commits(project_result):
@@ -84,7 +85,7 @@ def get_maintenance_activities_details(project_result):
                      "refactor_in_text": row_data[13],
                      "adaptive_in_text": row_data[14],
                      "adaptive_by_negation_in_text": row_data[15],
-                     "corretive_in_text": row_data[16],
+                     "corrective_in_text": row_data[16],
         })
 
     return rows
@@ -96,7 +97,7 @@ def get_devs_group_by_commits(project_result):
     :param project_result:
     :return:
     """
-    print("{now} : BEGIN get_devs_group_by_commits {base_git_path} \n".format(now=datetime.now(),
+    logger.info("{now} : BEGIN get_devs_group_by_commits {base_git_path} \n".format(now=datetime.now(),
                                                                   base_git_path=str(project_result.id)))
 
     if not os.path.exists(BASE_LOG_COMMITS + str(project_result.id) + '.csv'):
@@ -118,7 +119,7 @@ def get_devs_group_by_commits(project_result):
             if not author_found:
                 authors_list.append({"name": row[1], "commits": 1})
 
-    print("{now} : END get_devs_group_by_commits {base_git_path}\n".format(now=datetime.now(), base_git_path=str(project_result.id)))
+    logger.info("{now} : END get_devs_group_by_commits {base_git_path}\n".format(now=datetime.now(), base_git_path=str(project_result.id)))
     return authors_list
 
 def corrective_classifier(commit_message):
@@ -127,12 +128,11 @@ def corrective_classifier(commit_message):
     :param commit_message:
     :return:
     """
-    # print("# corretive_classifier on commit: "+commitMessage.id)
     text = commit_message.message
 
-    commit_message.is_corretive = is_fix(text)
-    commit_message.corretive_in_text = re.findall(build_bug_fix_regex(), text)
-    valid_num = len(commit_message.corretive_in_text)
+    commit_message.is_corrective = is_fix(text)
+    commit_message.corrective_in_text = re.findall(build_bug_fix_regex(), text)
+    valid_num = len(commit_message.corrective_in_text)
     commit_message.bug_fix_regex_count = valid_num
 
     return commit_message
@@ -144,7 +144,6 @@ def adaptive_classifier(commit_message):
     :param commit_message:
     :return:
     """
-    # print("# adaptive_classifier on commit: "+commitMessage.id)
     text = commit_message.message
 
     commit_message.is_adaptive = is_adaptive(text)
@@ -161,7 +160,6 @@ def adaptive_by_negation_classifier(commit_message):
     :param commit_message:
     :return:
     """
-    # print("# adaptive_by_negation_classifier on commit: "+commitMessage.id)
     text = commit_message.message
 
     commit_message.is_adaptive_by_negation = (is_fix(text) == 0
@@ -180,7 +178,6 @@ def perfective_classifier(commit_message):
     :param commit_message:
     :return:
     """
-    # print("# perfective_classifier on commit: "+commitMessage.id)
     text = commit_message.message
 
     commit_message.is_perfective = ((match(text, build_perfective_regex())) +
@@ -198,7 +195,6 @@ def refactor_classifier(commit_message):
     :param commit_message:
     :return:
     """
-    # print("# is_refactor_classifier on commit: "+commitMessage.id)
     text = commit_message.message
 
     commit_message.is_refactor = built_is_refactor(text)
@@ -231,77 +227,67 @@ def save_maintenance_activities_log(file_name, data):
         file_contents += str(line.is_refactor) + ";"  # I
         file_contents += str(line.is_adaptive) + ";"  # J
         file_contents += str(line.is_adaptive_by_negation) + ";"  # K
-        file_contents += str(line.is_corretive) + ";"  # L
+        file_contents += str(line.is_corrective) + ";"  # L
         file_contents += str(line.perfective_in_text) + ";"  # M
         file_contents += str(line.refactor_in_text) + ";"  # N
         file_contents += str(line.adaptive_in_text) + ";"  # O
         file_contents += str(line.adaptive_by_negation_in_text) + ";"  # P
-        file_contents += str(line.corretive_in_text) + ";"  # Q
-        file_contents += "\n";
+        file_contents += str(line.corrective_in_text) + ";"  # Q
+        file_contents += "\n"
 
     opened_file.write("{}".format(file_contents))
     opened_file.close()
 
 
-def get_maintenance_activities_repo(project_result):
+def get_maintenance_activities_repo(project_result, db):
     """
     Get the maintenance activities from the repository.
     :param project_result:
+    :param db:
     :return:
     """
-    print("{now} : BEGIN get_data_repo {base_git_path} \n".format(now=datetime.now(),
+    logger.info("{now} : BEGIN get_data_repo {base_git_path} \n".format(now=datetime.now(),
                                                                   base_git_path=str(project_result.id)))
 
-    try:
-        result_repo_test = check_maintenance_activities(BASE_LOG_MAINTENANCE_ACTIVITIES, str(project_result.id), "utf-8")
-    except:
-        result_repo_test = check_maintenance_activities(BASE_LOG_MAINTENANCE_ACTIVITIES, str(project_result.id), "latin-1")
+    result_repo_test = check_maintenance_activities(db, project_result.id)
 
-    print("{now} : END get_data_repo {base_git_path}\n".format(now=datetime.now(), base_git_path=str(project_result.id)))
+    logger.info("{now} : END get_data_repo {base_git_path}\n".format(now=datetime.now(), base_git_path=str(project_result.id)))
     return {"n_corrective": result_repo_test[0], "n_adaptive": result_repo_test[1], "n_perfective": result_repo_test[2],
             "n_multi": result_repo_test[3]}
 
 
-def check_maintenance_activities(path_param, file_param, encoding):
+def check_maintenance_activities(db, pipeline_id):
     """
-    Check the maintenance activities in the repository.
-    :param path_param:
-    :param file_param:
-    :param encoding:
+    Check the maintenance activities in the database.
+    :param db:
+    :param pipeline_id:
     :return:
     """
     list_maintenance = [0, 0, 0, 0, 0]  # 0- corrective, 1 - adaptive, 2 -perfective, 3- multi
 
-    with open(os.path.join(path_param, file_param + ".csv"), encoding=encoding) as csv_file:
-        for row in csv_file:
-            item = CommitMaintenanceActivitiesResult()
-            csv_line = row.split(';')
+    commit_message_itens = crud.get_commit_message_items_by_pipeline(db, pipeline_id)
 
-            if (len(csv_line) < 17):
-                continue
+    for item in commit_message_itens:
+        corrective = 0
+        adaptive = 0
+        perfective = 0
 
-            item.set_from_csv(csv_line)
+        if item.is_corrective:
+            corrective = 1
 
-            corrective = 0
-            adaptive = 0
-            perfective = 0
+        if int(item.is_adaptive) > 0 or item.is_adaptive_by_negation == True:
+            adaptive = 1
 
-            if item.is_corrective == 'True':
-                corrective = 1
+        if item.is_perfective:
+            perfective = 1
 
-            if int(item.is_adaptive) > 0 or item.is_adaptive_by_negation == 'True':
-                adaptive = 1
+        list_maintenance[0] = list_maintenance[0] + corrective
+        list_maintenance[1] = list_maintenance[1] + adaptive
+        list_maintenance[2] = list_maintenance[2] + perfective
 
-            if item.is_perfective == 'True':
-                perfective = 1
+        total = corrective + adaptive + perfective
 
-            list_maintenance[0] = list_maintenance[0] + corrective
-            list_maintenance[1] = list_maintenance[1] + adaptive
-            list_maintenance[2] = list_maintenance[2] + perfective
-
-            total = corrective + adaptive + perfective
-
-            if total > 1:
-                list_maintenance[3] = list_maintenance[3] + 1
+        if total > 1:
+            list_maintenance[3] = list_maintenance[3] + 1
 
     return list_maintenance

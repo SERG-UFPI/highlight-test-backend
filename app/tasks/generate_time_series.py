@@ -12,7 +12,7 @@ from ..helpers.generate_timeseries_utils import process_cloc_history, cloc_serie
 from ..helpers.http_utils import start_process_safe
 from ..schemas import StageEnum
 from ..celery_config import celery_app
-from app.helpers.utils import save_csv, get_json, clean_create_dir, save_json, is_windows
+from app.helpers.utils import clean_create_dir, is_windows
 from ..logger_config import *
 
 router = APIRouter(
@@ -64,7 +64,8 @@ def generate_timeseries_task(pipeline_id: str):
 
         project_result = MyProjectResult(db_additional_data, pipeline_id)
 
-        commit_history = get_json(os.path.join(BASE_LOG_REVISIONS, str(project_result.id) + ".json"))
+        base_itens = crud.get_base_items_by_pipeline(db, project_result.id)
+        commit_history = [revision.base_item for revision in base_itens]
 
         if not commit_history:
             return False
@@ -99,15 +100,11 @@ def generate_timeseries_task(pipeline_id: str):
             if calculate_loc:
                 clean_create_dir(loc_path_log)
 
-            test_contents = ""
-
             for path_item, _, files_git_path in os.walk(base_git_path):
                 for file_git_path in files_git_path:
                     try:
                         file_extension = file_git_path.rpartition(".")[-1]
                         if file_extension in FILE_EXTENSION_ACCEPTED:
-                            now = datetime.now()
-                            timestamp = datetime.timestamp(now)
 
                             file_contents = ""
                             file = os.path.join(base_git_path, path_item, file_git_path)
@@ -125,13 +122,17 @@ def generate_timeseries_task(pipeline_id: str):
                             if has_test_import + has_test_call == 2:
                                 is_test_file = 1
 
-                            test_contents += f"{project_result.base_git},{file},{is_test_file},{has_test_import},{has_test_call}\n"
-                            save_csv(test_path_log, str(project_result.id), test_contents)
+                            db_test_data = {
+                                "file_path": file,
+                                "is_test_file": is_test_file,
+                                "has_test_import": has_test_import,
+                                "has_test_call": has_test_call,
+                                "pipeline_id": pipeline_id,
+                                "commit_order": commit_order
+                            }
 
-                            path_full_file = os.path.join(base_git_path, file)
+                            crud.create_test_data(db, db_test_data)
 
-                            filename = file.rpartition("/")[-1]
-                            path_file_cloc = f"{filename}.{timestamp}.json"
                     except Exception as e:
                         logger.error(f"Error processing file {file_git_path}: {e}")
                         continue
@@ -171,9 +172,6 @@ def cloc_series_history_task(pipeline_id: str):
     if db_repository is None:
         raise HTTPException(status_code=404, detail="Repository not found")
 
-    ploc_list = []
-    tloc_list = []
-
     try:
         db_additional_data = crud.get_additional_data_by_repository(db, repository_id=db_repository.id)
         if db_additional_data is None:
@@ -181,13 +179,24 @@ def cloc_series_history_task(pipeline_id: str):
 
         project_result = MyProjectResult(db_additional_data, pipeline_id)
 
-        data_series = cloc_series(project_result.id, classify_test_based_on_function)
+        data_series = cloc_series(pipeline_id, classify_test_based_on_function, db, db_additional_data.uses_external_id)
 
-        ploc_list.append({"id": str(project_result.id), "full_name": project_result.base_git, "timeseries": data_series[0]})
-        tloc_list.append({"id": str(project_result.id), "full_name": project_result.base_git, "timeseries": data_series[1]})
+        ploc_entry = {
+            "full_name": project_result.base_git,
+            "timeseries": data_series[0],
+            "metric_type": "production",
+            "pipeline_id": pipeline_id
+        }
 
-        save_json(BASE_LOG_CLOC, f"{project_result.id}_production_code_list", ploc_list)
-        save_json(BASE_LOG_CLOC, f"{project_result.id}_test_code_list", tloc_list)
+        tloc_entry = {
+            "full_name": project_result.base_git,
+            "timeseries": data_series[1],
+            "metric_type": "test",
+            "pipeline_id": pipeline_id
+        }
+
+        crud.create_code_metrics(db, ploc_entry)
+        crud.create_code_metrics(db, tloc_entry)
 
         db_pipeline.status = StatusEnum.COMPLETED
         db_pipeline.updated_at = datetime.now()

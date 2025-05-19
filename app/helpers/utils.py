@@ -1,5 +1,9 @@
 import json
 import os
+from datetime import datetime
+
+from app.logger_config import logger
+
 
 def is_empty(path):
     """
@@ -7,70 +11,70 @@ def is_empty(path):
     :param path:
     :return:
     """
-    dirs = os.listdir( path )
+    dirs = os.listdir(path)
 
     if len(dirs) == 0 :
         return True
 
     return False
 
-def clean_create_dir(dir):
+def clean_create_dir(my_directory):
     """
     Clean and create a directory.
-    :param dir:
+    :param my_directory:
     :return:
     """
-    if os.path.exists(dir):
-      os.system("rm -rf {my_directory}".format(my_directory=dir))
+    if os.path.exists(my_directory):
+      os.system("rm -rf {my_directory}".format(my_directory=my_directory))
 
-    os.mkdir(dir)
+    os.mkdir(my_directory)
 
-def get_json(dir):
+def get_json(my_directory):
     """
     Get JSON data from a file.
-    :param dir:
+    :param my_directory:
     :return:
     """
-    if os.path.exists(dir):
-        with open(dir) as json_file:
+    if os.path.exists(my_directory):
+        with open(my_directory) as json_file:
             return json.load(json_file)
     return False
 
-def save_json(dir, repository_id, data):
+def save_json(my_directory, repository_id, data):
     """
     Save JSON data to a file.
-    :param dir:
+    :param my_directory:
     :param repository_id:
     :param data:
     :return:
     """
-    file_path = dir + repository_id + ".json"
+    file_path = my_directory + repository_id + ".json"
     with open(file_path, 'w') as outfile:
       json.dump(data, outfile)
 
-def save_csv(dir, project_result_id, conteudo):
+def save_csv(my_directory, project_result_id, conteudo):
     """
     Save CSV data to a file.
-    :param dir:
+    :param my_directory:
     :param project_result_id:
     :param conteudo:
     :return:
     """
-    f = open(os.path.join(dir, project_result_id + ".csv"), "w+", encoding="utf-8")
+    f = open(os.path.join(my_directory, project_result_id + ".csv"), "w+", encoding="utf-8")
     f.write("{}\r\n".format(conteudo))
     f.close()
 
-def get_comma_separated_names(list, len_prev, indice_start, pos_start):
+def get_comma_separated_names(my_list, len_prev, indice_start, pos_start):
     """
     Get a comma-separated string from a list.
-    :param list:
+    :param my_list:
     :param len_prev:
     :param indice_start:
     :param pos_start:
     :return:
     """
-    stop = (pos_start + (len(list) - len_prev))
-    return ','.join(list[indice_start:stop])
+    stop = (pos_start + (len(my_list) - len_prev))
+    return ','.join(my_list[indice_start:stop])
 
 def create_default_diretories(directories):
     """
@@ -81,9 +85,9 @@ def create_default_diretories(directories):
     for directory in directories:
         if not os.path.exists(directory):
             os.makedirs(directory)
-            print(f"Directory created: {directory}")
+            logger.info(f"Directory created: {directory}")
         else:
-            print(f"Directory already exists: {directory}")
+            logger.info(f"Directory already exists: {directory}")
 
 def is_windows():
     """
@@ -128,3 +132,24 @@ def get_index(array, item):
         return array.index(item)
     except ValueError:
         return -1
+
+def is_valid_date(date_string, date_format="%Y-%m-%d %H:%M:%S"):
+    """
+    Check if the date string is valid according to the given format.
+    :param date_string:
+    :param date_format:
+    :return:
+    """
+    try:
+        datetime.strptime(date_string, date_format)
+        return True
+    except ValueError:
+        return False
+
+def is_zero_or_one(value: str) -> bool:
+    """
+    Check if the input string is '0' or '1'.
+    :param value: The input string to check.
+    :return: True if the string is '0' or '1', otherwise False.
+    """
+    return value.replace('\n', '') in {"0", "1"}

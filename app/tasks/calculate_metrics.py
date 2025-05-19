@@ -2,20 +2,18 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from .. import schemas, crud
-from ..constants import *
+from ..crud import get_commits_by_pipeline
 from ..database import get_db
 from ..dtos.commit_maintenance_activities_result import CommitMaintenanceActivitiesResult
 from ..dtos.my_project_result import MyProjectResult
 from ..enums import StatusEnum
 from ..helpers.calculate_metrics_utils import (
     get_project_dimension_repo, corrective_classifier, adaptive_classifier,
-    adaptive_by_negation_classifier, perfective_classifier, refactor_classifier,
-    save_maintenance_activities_log, get_maintenance_activities_repo
+    adaptive_by_negation_classifier, perfective_classifier, refactor_classifier, get_maintenance_activities_repo
 )
 from ..helpers.http_utils import start_process_safe
 from ..schemas import StageEnum
 from ..celery_config import celery_app
-from app.helpers.utils import save_json
 from ..logger_config import *
 
 router = APIRouter(
@@ -62,16 +60,21 @@ def project_dimension_task(pipeline_id: str):
 
         project_result = MyProjectResult(db_additional_data, pipeline_id)
 
-        data_repo = get_project_dimension_repo(project_result)
+        data_repo = get_project_dimension_repo(project_result, db)
         n_commits = data_repo["n_commits"]
         n_devs = data_repo["n_authors"]
-
         n_forks_count = project_result.forks_count
         n_open_issues_count = project_result.open_issues_count
 
-        save_json(BASE_LOG_PROJECT_DIMENSION, str(project_result.id), {
-            "n_commits": n_commits, "n_devs": n_devs, "n_forks_count": n_forks_count, "n_open_issues_count": n_open_issues_count
-        })
+        project_dimension_entry = {
+            "n_commits": n_commits,
+            "n_devs": n_devs,
+            "n_forks_count": n_forks_count,
+            "n_open_issues_count": n_open_issues_count,
+            "pipeline_id": pipeline_id
+        }
+
+        crud.create_project_dimension(db, project_dimension_entry)
 
         commit_classification_task.delay(pipeline_id)
 
@@ -109,23 +112,16 @@ def commit_classification_task(pipeline_id: str):
 
         project_result = MyProjectResult(db_additional_data, pipeline_id)
 
-        file_name = str(project_result.id) + ".csv"
-        with open(os.path.join(BASE_LOG_COMMITS, file_name), "r", encoding="latin-1") as opened_file:
-            commit_messages = {}
+        commits = get_commits_by_pipeline(db, str(project_result.id))
 
-            file_content = opened_file.read()
-            content_data = file_content.split(";\n")
-            for line in content_data:
-                data_line = line.split(';')
-                if line == "\n\n" or len(data_line) < 5:
-                    continue
+        commit_messages = {}
 
-                message = data_line[4].replace('\n', ' ')
-                commit_messages[data_line[0]] = CommitMaintenanceActivitiesResult()
-                commit_messages[data_line[0]].id = data_line[0]
-                commit_messages[data_line[0]].message = message
+        for commit in commits:
+            message = commit.message.replace('\n', ' ')
+            commit_messages[commit.hash] = CommitMaintenanceActivitiesResult()
+            commit_messages[commit.hash].hash = commit.hash
+            commit_messages[commit.hash].message = message
 
-        log_content = []
         for commit_message_key in commit_messages:
             commit_message_item = commit_messages[commit_message_key]
             commit_message_item.message = commit_message_item.message.lower()
@@ -135,9 +131,9 @@ def commit_classification_task(pipeline_id: str):
             commit_message_item = perfective_classifier(commit_message_item)
             commit_message_item = refactor_classifier(commit_message_item)
 
-            log_content.append(commit_message_item)
+            commit_message_item.pipeline_id = pipeline_id
 
-        save_maintenance_activities_log(file_name, log_content)
+            crud.create_commit_message_item(db, commit_message_item.to_dict())
 
         maintenance_activities_task.delay(pipeline_id)
 
@@ -175,7 +171,7 @@ def maintenance_activities_task(pipeline_id: str):
 
         project_result = MyProjectResult(db_additional_data, pipeline_id)
 
-        data_repo = get_maintenance_activities_repo(project_result)
+        data_repo = get_maintenance_activities_repo(project_result, db)
 
         result_repo_test_sum = data_repo["n_corrective"] + data_repo["n_adaptive"] + data_repo["n_perfective"]
 
@@ -184,9 +180,15 @@ def maintenance_activities_task(pipeline_id: str):
         n_perfective = data_repo["n_perfective"] * 100 / result_repo_test_sum
         n_multi = data_repo["n_multi"] * 100 / result_repo_test_sum
 
-        save_json(BASE_SUMMARY_MAINTENANCE_ACTIVITIES, str(project_result.id), {
-            "n_corrective": n_corrective, "n_adaptive": n_adaptive, "n_perfective": n_perfective, "n_multi": n_multi
-        })
+        maintenance_activity_summary = {
+            "n_corrective": n_corrective,
+            "n_adaptive": n_adaptive,
+            "n_perfective": n_perfective,
+            "n_multi": n_multi,
+            "pipeline_id": pipeline_id
+        }
+
+        crud.create_maintenance_activity_summary(db, maintenance_activity_summary)
 
         db_pipeline.status = StatusEnum.COMPLETED
         db_pipeline.updated_at = datetime.now()
