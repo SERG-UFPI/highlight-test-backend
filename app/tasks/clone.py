@@ -5,7 +5,7 @@ from .. import schemas, crud
 from ..database import get_db
 from ..enums import StatusEnum
 from ..helpers.http_utils import start_process_safe
-from ..helpers.utils import is_empty
+from ..helpers.utils import is_empty, create_default_diretories
 from ..schemas import StageEnum
 from ..celery_config import celery_app
 from ..constants import *
@@ -35,6 +35,22 @@ async def clone(process: schemas.ProcessBase, db: Session = Depends(get_db)):
 
 @celery_app.task
 def clone_task(pipeline_id: str):
+    # create directories
+    create_default_diretories([
+        BASE_RESULTS_PATH,
+        BASE_PROJECTS,
+        BASE_LOG_COMMITS,
+        BASE_LOG_PERIOD_REVISIONS,
+        BASE_LOG_REVISIONS,
+        BASE_LOG_TEST_FILE,
+        BASE_LOG_LOC,
+        BASE_LOG_CLOC,
+        BASE_LOG_PROJECT_DIMENSION,
+        BASE_LOG_MAINTENANCE_ACTIVITIES,
+        BASE_SUMMARY_MAINTENANCE_ACTIVITIES,
+        BASE_LOG_CO_EVOLUTION
+    ])
+
     logger.info(f"{datetime.now()} : BEGIN clone_task pipeline_id {pipeline_id}")
 
     db = next(get_db())

@@ -12,7 +12,6 @@ from .database import engine
 from .routers.auths import auth, permissions
 from .routers.cruds import repository, additional_data, pipeline, user, term
 from .routers.community import community_repository
-from .helpers.utils import create_default_diretories
 from .tasks import clone, extract_commits, generate_time_series, calculate_metrics, co_evolution_analysis
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -32,22 +31,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-#create directories
-create_default_diretories([
-        BASE_RESULTS_PATH,
-        BASE_PROJECTS,
-        BASE_LOG_COMMITS,
-        BASE_LOG_PERIOD_REVISIONS,
-        BASE_LOG_REVISIONS,
-        BASE_LOG_TEST_FILE,
-        BASE_LOG_LOC,
-        BASE_LOG_CLOC,
-        BASE_LOG_PROJECT_DIMENSION,
-        BASE_LOG_MAINTENANCE_ACTIVITIES,
-        BASE_SUMMARY_MAINTENANCE_ACTIVITIES,
-        BASE_LOG_CO_EVOLUTION
-    ])
 
 #save_code_distribution_details()
 
