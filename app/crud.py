@@ -362,7 +362,7 @@ def exits_correlation_by_pipeline(db: Session, pipeline_id: str):
     return db.query(models.Correlation).filter(models.Correlation.pipeline_id == pipeline_id).first() is not None
 
 # code_distribution_details
-def create_code_detail(db: Session, detail_data: dict):
+def create_code_distribution_details(db: Session, detail_data: dict):
     db_detail_data = CodeDistributionDetail(**detail_data)
     db.add(db_detail_data)
 
@@ -377,6 +377,9 @@ def get_code_distribution_details_by_pipeline_and_commit_order(db: Session, pipe
                     models.CodeDistributionDetail.commit_order == commit_order)
             .order_by(models.CodeDistributionDetail.created_at.asc())
             .all())
+
+def exits_code_distribution_details_by_pipeline(db: Session, pipeline_id: str):
+    return db.query(models.CodeDistributionDetail).filter(models.CodeDistributionDetail.pipeline_id == pipeline_id).first() is not None
 
 # insights
 def create_insights(db: Session, insights: dict):

@@ -518,7 +518,7 @@ class TestCRUD(unittest.TestCase):
         self.db.commit.return_value = None
         self.db.refresh.return_value = mock_detail
 
-        result = create_code_detail(self.db, detail_data)
+        result = create_code_distribution_details(self.db, detail_data)
         self.assertEqual(result.commit_order, 1)
         self.assertEqual(result.path, "src/main.py")
         self.assertEqual(result.loc, 150)

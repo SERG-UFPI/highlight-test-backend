@@ -1,9 +1,11 @@
 import os
 
+from app.config import SERVER_RESULTS_PATH
+
 MY_SEPARATOR = "/"
 
 PARENT_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
-BASE_RESULTS_PATH = os.path.join(PARENT_DIRECTORY, "results") + MY_SEPARATOR
+BASE_RESULTS_PATH = SERVER_RESULTS_PATH + MY_SEPARATOR
 BASE_PROJECTS = os.path.join(BASE_RESULTS_PATH, "projects") + MY_SEPARATOR
 BASE_LOG_COMMITS = os.path.join(BASE_RESULTS_PATH, "commits_history") + MY_SEPARATOR
 BASE_LOG_PERIOD_REVISIONS = os.path.join(BASE_RESULTS_PATH, "period_revisions") + MY_SEPARATOR

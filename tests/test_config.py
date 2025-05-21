@@ -1,23 +1,6 @@
 import unittest
 from unittest.mock import patch
-import os
-from app.config import (
-    SERVER_BASE_URL,
-    AUTH_SECRET_KEY,
-    AUTH_ALGORITHM,
-    AUTH_ACCESS_TOKEN_EXPIRE_MINUTES,
-    SQLALCHEMY_DATABASE_URL,
-    CELERY_BROKER_URL,
-    CELERY_BACKEND,
-    GITHUB_CLIENT_ID,
-    GITHUB_CLIENT_SECRET,
-    GITHUB_REDIRECT_URI,
-    GITHUB_REDIRECT_FRONTEND,
-    GEMINI_API_KEY,
-    FRONTEND_URL,
-    SERVER_HOST,
-    SERVER_PORT
-)
+from app.config import *
 
 class TestConfig(unittest.TestCase):
 
@@ -36,7 +19,8 @@ class TestConfig(unittest.TestCase):
         "GEMINI_API_KEY": "test_gemini_api_key",
         "FRONTEND_URL": "http://localhost:3000",
         "SERVER_HOST": "127.0.0.1",
-        "SERVER_PORT": "8000"
+        "SERVER_PORT": "8000",
+        "SERVER_RESULTS_PATH": "/var/results",
 
     })
     def test_environment_variables(self):
@@ -55,6 +39,7 @@ class TestConfig(unittest.TestCase):
         self.assertIsNotNone(FRONTEND_URL)
         self.assertIsNotNone(SERVER_HOST)
         self.assertIsNotNone(SERVER_PORT)
+        self.assertIsNotNone(SERVER_RESULTS_PATH)
 
 if __name__ == "__main__":
     unittest.main()

@@ -62,11 +62,9 @@ def cloc_series(pipeline_id, classify_test_based_on_function, db, uses_external_
             continue
 
         if classify_test_based_on_function :
-            p_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.has_test_call != 1]
             t_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.has_test_call == 1]
 
         else:
-            p_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.is_test_file != 1]
             t_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.is_test_file == 1]
 
         valid_cloc = False
@@ -75,7 +73,7 @@ def cloc_series(pipeline_id, classify_test_based_on_function, db, uses_external_
 
         for line in opened_file:
 
-            if line.find(BASE_PROJECTS_FOLDER_NAME) == -1:
+            if line.find(BASE_PROJECTS_FOLDER_NAME) == -1 and line.find(IMPORTED_PROJECTS_FOLDER_NAME) == -1:
                 continue
 
             if not valid_cloc:
@@ -97,17 +95,18 @@ def cloc_series(pipeline_id, classify_test_based_on_function, db, uses_external_
             if extension not in FILE_EXTENSION_ACCEPTED:
                 continue
 
-            if path_query in p_files:
-                ploc_sum = ploc_sum + value
-                crud.create_code_detail(db, {"language": language, "commit_order": commit_order, "pipeline_id": str(pipeline_id), "path": simple_name_path, "loc": value, "is_test_file": False})
+            is_test_file = path_query in t_files
 
-                continue
-
-            if path_query in t_files:
+            if is_test_file:
                 tloc_sum = tloc_sum + value
-                crud.create_code_detail(db, {"language": language, "commit_order": commit_order, "pipeline_id": str(pipeline_id), "path": simple_name_path, "loc": value, "is_test_file": True})
+            else:
+                ploc_sum = ploc_sum + value
 
-                continue
+            crud.create_code_distribution_details(db,
+                                                  {"language": language, "commit_order": commit_order,
+                                                   "pipeline_id": str(pipeline_id),
+                                                   "path": simple_name_path, "loc": value,
+                                                   "is_test_file": is_test_file})
 
         ploc_item.append(ploc_sum)
         tloc_item.append(tloc_sum)

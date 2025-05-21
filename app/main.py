@@ -6,7 +6,7 @@ from .config import FRONTEND_URL
 from .constants import *
 from .helpers.import_dataset_utils import generate_metrics, save_commits, save_code_metrics, \
     save_competence_and_base_items, save_test_datas, save_project_dimensions, save_correlation, save_insights, \
-    save_commit_message_item, save_maintenance_activity_summaries
+    save_commit_message_item, save_maintenance_activity_summaries, save_code_distribution_details
 from .routers.dashboards import general
 from .database import engine
 from .routers.auths import auth, permissions
@@ -48,6 +48,8 @@ create_default_diretories([
         BASE_SUMMARY_MAINTENANCE_ACTIVITIES,
         BASE_LOG_CO_EVOLUTION
     ])
+
+#save_code_distribution_details()
 
 #permissions
 app.include_router(permissions.router)
