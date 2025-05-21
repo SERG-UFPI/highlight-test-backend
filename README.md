@@ -25,12 +25,20 @@ The project leverages the following technologies:
 2. Install the dependencies from requirements.txt:
     ```bash
     pip install -r requirements.txt
+   ```
+
+## Additional Requirements
+If you are running the application on a non-Windows environment, you need to install `cloc` as it is required for certain functionalities. You can install it using the following command:
+   ```bash
+   apt-get update && apt-get install -y cloc
+   ```
 
 ## Environment Variables
 
 The application requires the following environment variables to be set. These can be configured in a `.env` file in the root directory of the project:
 
 - **SERVER_BASE_URL**: Base URL for the server (e.g., `http://localhost:8000`).
+- **SERVER_RESULTS_PATH**: Path where the server will store result files (e.g., `/var/home/results`).
 - **AUTH_SECRET_KEY**: Secret key for authentication.
 - **AUTH_ALGORITHM**: Algorithm used for token generation (e.g., `HS256`).
 - **AUTH_ACCESS_TOKEN_EXPIRE_MINUTES**: Expiration time for access tokens in minutes.
