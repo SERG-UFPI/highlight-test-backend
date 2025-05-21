@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from . import models
 from .config import FRONTEND_URL
@@ -18,6 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 origins = [
     FRONTEND_URL,
