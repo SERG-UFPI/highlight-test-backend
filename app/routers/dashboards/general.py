@@ -315,7 +315,7 @@ def co_evolution_details(process: schemas.ProcessRevision, db: Session = Depends
 
         for commit_order in commits_range:
 
-            files_list = crud.get_code_distribution_details_by_pipeline_and_commit_order(db, project_result.id, commit_order)
+            files_list = crud.get_tests_data_by_pipeline_and_commit_order(db, project_result.id, commit_order)
 
             t_files_list = [file for file in files_list if file.is_test_file]
 
@@ -336,10 +336,12 @@ def co_evolution_details(process: schemas.ProcessRevision, db: Session = Depends
                     code_co_evolution = get_code_co_evolution(p_status_evolution, t_status_evolution)
 
                     file_item = {
-                        "p_path": p_file_item.path,
+                        "p_path": get_simple_name_path(p_file_item.file_path, db_additional_data.uses_external_id,
+                                                     pipeline_id),
                         "p_loc": p_file_item.loc,
                         "p_status_evolution": p_status_evolution,
-                        "t_path": t_file_item.path,
+                        "t_path": get_simple_name_path(t_file_item.file_path, db_additional_data.uses_external_id,
+                                                     pipeline_id),
                         "t_loc": t_file_item.loc,
                         "t_status_evolution": t_status_evolution,
                         "code_co_evolution": code_co_evolution,
