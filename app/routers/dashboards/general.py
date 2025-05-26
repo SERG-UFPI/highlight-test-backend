@@ -315,11 +315,19 @@ def co_evolution_details(process: schemas.ProcessRevision, db: Session = Depends
 
         for commit_order in commits_range:
 
-            files_list = crud.get_tests_data_by_pipeline_and_commit_order(db, project_result.id, commit_order)
+            files_list = crud.get_code_distribution_details_by_pipeline_and_commit_order(db, project_result.id, commit_order)
+            for file_row in files_list:
+                file_row.path =  get_simple_name_path(file_row.path, db_additional_data.uses_external_id,
+                                                     pipeline_id)
 
-            t_files_list = [file for file in files_list if file.is_test_file]
+            tests_data = crud.get_tests_data_by_pipeline_and_commit_order(db, project_result.id, commit_order)
 
-            p_files_list = [file for file in files_list if not file.is_test_file]
+            test_file_paths = [get_simple_name_path(test_data.file_path, db_additional_data.uses_external_id,
+                                                     pipeline_id) for test_data in tests_data if test_data.is_test_file]
+
+            t_files_list = [file for file in files_list if file.path in test_file_paths]
+
+            p_files_list = [file for file in files_list if file.path not in test_file_paths]
 
             test_files_map = preprocess_java_test_files(t_files_list)
 
@@ -329,26 +337,39 @@ def co_evolution_details(process: schemas.ProcessRevision, db: Session = Depends
                 else:
                     t_file_item = None
 
+                p_status_evolution = get_status_evolution(p_file_item, previous_p_files_list)
+
                 if t_file_item:
 
-                    p_status_evolution = get_status_evolution(p_file_item, previous_p_files_list)
                     t_status_evolution = get_status_evolution(t_file_item, previous_t_files_list)
                     code_co_evolution = get_code_co_evolution(p_status_evolution, t_status_evolution)
 
                     file_item = {
-                        "p_path": get_simple_name_path(p_file_item.file_path, db_additional_data.uses_external_id,
-                                                     pipeline_id),
+                        "p_path": p_file_item.path,
                         "p_loc": p_file_item.loc,
                         "p_status_evolution": p_status_evolution,
-                        "t_path": get_simple_name_path(t_file_item.file_path, db_additional_data.uses_external_id,
-                                                     pipeline_id),
+                        "t_path": t_file_item.path,
                         "t_loc": t_file_item.loc,
                         "t_status_evolution": t_status_evolution,
                         "code_co_evolution": code_co_evolution,
                         "revision": revisions[commit_order]
                     }
 
-                    if commit_order != previous_revision_index and file_item["p_status_evolution"] != 'Clean':
+                else:
+
+                    file_item = {
+                        "p_path": p_file_item.path,
+                        "p_loc": p_file_item.loc,
+                        "p_status_evolution": p_status_evolution,
+                        "t_path": "",
+                        "t_loc": 0,
+                        "t_status_evolution": "",
+                        "code_co_evolution": False,
+                        "revision": revisions[commit_order]
+                    }
+
+
+                if commit_order != previous_revision_index and file_item["p_status_evolution"] != 'Clean':
                         contents.append(file_item)
 
             previous_p_files_list = p_files_list
