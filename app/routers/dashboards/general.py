@@ -317,9 +317,9 @@ def co_evolution_details(process: schemas.ProcessRevision, db: Session = Depends
 
             files_list = crud.get_code_distribution_details_by_pipeline_and_commit_order(db, project_result.id, commit_order)
 
-            t_files_list = [file for file in files_list if file.is_test_file == 1]
+            t_files_list = [file for file in files_list if file.is_test_file]
 
-            p_files_list = [file for file in files_list if file.is_test_file != 1]
+            p_files_list = [file for file in files_list if not file.is_test_file]
 
             test_files_map = preprocess_java_test_files(t_files_list)
 

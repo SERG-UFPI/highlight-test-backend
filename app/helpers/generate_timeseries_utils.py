@@ -50,6 +50,12 @@ def cloc_series(pipeline_id, classify_test_based_on_function, db):
 
     test_datas = get_tests_data_by_pipeline(db, pipeline_id)
 
+    test_data_by_commit_order = {}
+    for data in test_datas:
+        if data.commit_order not in test_data_by_commit_order:
+            test_data_by_commit_order[data.commit_order] = []
+        test_data_by_commit_order[data.commit_order].append(data)
+
     for commit_order in commit_selected:
 
         details_data = []
@@ -57,7 +63,7 @@ def cloc_series(pipeline_id, classify_test_based_on_function, db):
         ploc_sum = 0
         tloc_sum = 0
 
-        filtered_test_datas = [data for data in test_datas if data.commit_order == commit_order]
+        filtered_test_datas = test_data_by_commit_order.get(commit_order, [])
 
         if filtered_test_datas is None or len(filtered_test_datas) == 0:
             ploc_item.append(ploc_sum)

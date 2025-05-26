@@ -738,9 +738,15 @@ def save_code_distribution_details():
 
                 test_datas = crud.get_tests_data_by_pipeline(db, pipeline_id)
 
+                test_data_by_commit_order = {}
+                for data in test_datas:
+                    if data.commit_order not in test_data_by_commit_order:
+                        test_data_by_commit_order[data.commit_order] = []
+                    test_data_by_commit_order[data.commit_order].append(data)
+
                 for commit_order in commit_selected:
 
-                    filtered_test_datas = [data for data in test_datas if data.commit_order == commit_order]
+                    filtered_test_datas = test_data_by_commit_order.get(commit_order, [])
 
                     if filtered_test_datas is None or len(filtered_test_datas) == 0:
                         continue
@@ -770,6 +776,8 @@ def save_code_distribution_details():
                         details_data.append({"language": language, "commit_order": commit_order,
                                                                    "pipeline_id": str(pipeline_id),
                                                                    "path": path_query, "loc": value})
+
+                        logger.info(f"Processing file at path: {path_query} for commit order: {commit_order}.")
 
                     crud.create_all_code_distribution_details(db, details_data)
 
