@@ -1,7 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from scipy.stats import pearsonr
 from .. import schemas, crud
 from ..database import get_db
 from ..dtos.my_project_result import MyProjectResult
@@ -9,7 +8,6 @@ from ..enums import StatusEnum
 from ..helpers.co_evolution_utils import check_coevolution
 from ..schemas import StageEnum
 from ..logger_config import *
-import warnings
 
 router = APIRouter(
     prefix="/process/co_evolution_analysis",

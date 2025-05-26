@@ -8,11 +8,12 @@ from ..dtos.my_project_result import MyProjectResult
 from app.libs.test_code_classification.fileAnalysis import test_include, test_keyword
 from app.libs.test_code_classification.utilities import lookup_generator, tech_lookup_generator
 from ..enums import StatusEnum
+from ..helpers.file_utils import clean_create_dir
 from ..helpers.generate_timeseries_utils import process_cloc_history, cloc_series
 from ..helpers.http_utils import start_process_safe
+from ..helpers.system_utils import is_windows
 from ..schemas import StageEnum
 from ..celery_config import celery_app
-from app.helpers.utils import clean_create_dir, is_windows
 from ..logger_config import *
 
 router = APIRouter(
@@ -82,6 +83,8 @@ def generate_timeseries_task(pipeline_id: str):
                 commit_order += 1
                 continue
 
+            tests_data = []
+
             base_git_path = os.path.join(BASE_PROJECTS, str(pipeline_id), project_result.base_git)
 
             if is_windows():
@@ -131,11 +134,13 @@ def generate_timeseries_task(pipeline_id: str):
                                 "commit_order": commit_order
                             }
 
-                            crud.create_test_data(db, db_test_data)
+                            tests_data.append(db_test_data)
 
                     except Exception as e:
                         logger.error(f"Error processing file {file_git_path}: {e}")
                         continue
+
+            crud.create_all_test_data(db, tests_data)
 
             if calculate_loc:
                 process_cloc_history(base_git_path, loc_path_log)
@@ -179,7 +184,7 @@ def cloc_series_history_task(pipeline_id: str):
 
         project_result = MyProjectResult(db_additional_data, pipeline_id)
 
-        data_series = cloc_series(pipeline_id, classify_test_based_on_function, db, db_additional_data.uses_external_id)
+        data_series = cloc_series(pipeline_id, classify_test_based_on_function, db)
 
         ploc_entry = {
             "full_name": project_result.base_git,

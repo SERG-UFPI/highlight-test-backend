@@ -275,10 +275,22 @@ def create_test_data(db: Session, test_data: dict):
 
     return db_test_data
 
-def get_test_datas_by_pipeline(db: Session, pipeline_id: str):
+def create_all_test_data(db: Session, tests_data: list[dict]):
+    db_tests_data = [TestData(**test_data) for test_data in tests_data]
+    db.add_all(db_tests_data)
+    db.commit()
+
+def get_tests_data_by_pipeline(db: Session, pipeline_id: str):
     return db.query(models.TestData).filter(models.TestData.pipeline_id == pipeline_id).order_by(models.TestData.commit_order.asc(), models.TestData.created_at.asc()).all()
 
-def exits_test_datas_by_pipeline(db: Session, pipeline_id: str):
+def get_tests_data_by_pipeline_and_commit_order(db: Session, pipeline_id: str, commit_order: int):
+    return (db.query(models.TestData)
+            .filter(models.TestData.pipeline_id == pipeline_id,
+                    models.TestData.commit_order == commit_order)
+            .order_by(models.TestData.created_at.asc())
+            .all())
+
+def exits_tests_data_by_pipeline(db: Session, pipeline_id: str):
     return db.query(models.TestData).filter(models.TestData.pipeline_id == pipeline_id).first() is not None
 
 # code_metrics
@@ -370,6 +382,11 @@ def create_code_distribution_details(db: Session, detail_data: dict):
     db.refresh(db_detail_data)
 
     return db_detail_data
+
+def create_all_code_distribution_details(db: Session, details_data: list[dict]):
+    db_details = [CodeDistributionDetail(**detail_data) for detail_data in details_data]
+    db.add_all(db_details)
+    db.commit()
 
 def get_code_distribution_details_by_pipeline_and_commit_order(db: Session, pipeline_id: str, commit_order: int):
     return (db.query(models.CodeDistributionDetail)

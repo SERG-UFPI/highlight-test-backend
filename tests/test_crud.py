@@ -386,7 +386,7 @@ class TestCRUD(unittest.TestCase):
         ]
         self.db.query.return_value.filter.return_value.order_by.return_value.all.return_value = mock_test_datas
 
-        result = get_test_datas_by_pipeline(self.db, pipeline_id)
+        result = get_tests_data_by_pipeline(self.db, pipeline_id)
         self.assertEqual(len(result), 2)
 
     def test_create_code_metrics_saves_metrics_correctly(self):

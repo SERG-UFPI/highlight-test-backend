@@ -9,7 +9,7 @@ from app.config import *
 from app.helpers.user_utils import check_password, create_access_token
 from app import schemas
 from app.database import get_db
-from app.helpers.utils import parse_int
+from app.helpers.validation_utils import parse_int
 
 router = APIRouter(
     prefix="/auth",

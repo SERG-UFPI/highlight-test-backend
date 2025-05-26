@@ -189,7 +189,6 @@ class CodeDistributionDetail(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     path = Column(String, nullable=False)
     loc = Column(Integer, nullable=False)
-    is_test_file = Column(Boolean, nullable=False)
     commit_order = Column(Integer, nullable=False)
     language = Column(String, nullable=True)
     pipeline_id = Column(UUID(as_uuid=True), ForeignKey("pipeline.id"), nullable=False)

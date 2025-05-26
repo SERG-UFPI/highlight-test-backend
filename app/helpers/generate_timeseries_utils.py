@@ -2,8 +2,10 @@ from datetime import datetime
 
 from app import crud
 from app.constants import *
-from app.crud import get_test_datas_by_pipeline
-from app.helpers.utils import get_comma_separated_names, is_windows, parse_int
+from app.crud import get_tests_data_by_pipeline
+from app.helpers.string_utils import get_comma_separated_names
+from app.helpers.system_utils import is_windows
+from app.helpers.validation_utils import parse_int
 from app.logger_config import logger
 
 
@@ -27,13 +29,12 @@ def process_cloc_history(base_git_path, loc_path_log):
     logger.info(command)
     os.system(command)
 
-def cloc_series(pipeline_id, classify_test_based_on_function, db, uses_external_id):
+def cloc_series(pipeline_id, classify_test_based_on_function, db):
     """
     Process the cloc series for a given pipeline.
     :param pipeline_id:
     :param classify_test_based_on_function:
     :param db:
-    :param uses_external_id:
     :return:
     """
     logger.info("{now} : BEGIN git log process_cloc: {path_git} \n".format(now=datetime.now(), path_git=pipeline_id))
@@ -47,9 +48,11 @@ def cloc_series(pipeline_id, classify_test_based_on_function, db, uses_external_
     revision_length = len(revisions)
     commit_selected = range(revision_length)
 
-    test_datas = get_test_datas_by_pipeline(db, pipeline_id)
+    test_datas = get_tests_data_by_pipeline(db, pipeline_id)
 
     for commit_order in commit_selected:
+
+        details_data = []
 
         ploc_sum = 0
         tloc_sum = 0
@@ -61,13 +64,12 @@ def cloc_series(pipeline_id, classify_test_based_on_function, db, uses_external_
             tloc_item.append(tloc_sum)
             continue
 
-        if classify_test_based_on_function :
+        if classify_test_based_on_function:
             t_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.has_test_call == 1]
 
         else:
             t_files = [data.file_path.replace('\\', '/').replace('//', '/') for data in filtered_test_datas if data.is_test_file == 1]
 
-        valid_cloc = False
         opened_file = open(os.path.join(BASE_LOG_LOC, str(pipeline_id), str(commit_order), 'cloc.log'), "r",
                            encoding="latin-1")
 
@@ -76,20 +78,12 @@ def cloc_series(pipeline_id, classify_test_based_on_function, db, uses_external_
             if line.find(BASE_PROJECTS_FOLDER_NAME) == -1 and line.find(IMPORTED_PROJECTS_FOLDER_NAME) == -1:
                 continue
 
-            if not valid_cloc:
-                valid_cloc = True
-
             # language;filename;blank;comment;code;
             line_data = line.split(',')
 
             language = line_data[0]
             path_query = get_comma_separated_names(line_data, 5, 1, 2).replace('\\', '/').replace('//', '/')
             value = parse_int(line_data[-1].replace('\n', ''))
-
-            if uses_external_id:
-                simple_name_path = path_query.rpartition(IMPORTED_PROJECTS_FOLDER_NAME + "/")[-1]
-            else:
-                simple_name_path = path_query.rpartition(str(pipeline_id) + "/")[-1]
 
             extension = path_query.rpartition(".")[-1]
             if extension not in FILE_EXTENSION_ACCEPTED:
@@ -102,11 +96,11 @@ def cloc_series(pipeline_id, classify_test_based_on_function, db, uses_external_
             else:
                 ploc_sum = ploc_sum + value
 
-            crud.create_code_distribution_details(db,
-                                                  {"language": language, "commit_order": commit_order,
+            details_data.append({"language": language, "commit_order": commit_order,
                                                    "pipeline_id": str(pipeline_id),
-                                                   "path": simple_name_path, "loc": value,
-                                                   "is_test_file": is_test_file})
+                                                   "path": path_query, "loc": value})
+
+        crud.create_all_code_distribution_details(db, details_data)
 
         ploc_item.append(ploc_sum)
         tloc_item.append(tloc_sum)

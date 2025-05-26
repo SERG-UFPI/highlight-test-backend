@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from .. import schemas, crud
 from ..database import get_db
 from ..enums import StatusEnum
+from ..helpers.file_utils import create_default_diretories, is_empty
 from ..helpers.http_utils import start_process_safe
-from ..helpers.utils import is_empty, create_default_diretories
 from ..schemas import StageEnum
 from ..celery_config import celery_app
 from ..constants import *
@@ -32,6 +32,7 @@ async def clone(process: schemas.ProcessBase, db: Session = Depends(get_db)):
     clone_task.delay(process.pipeline_id)
 
     return {}
+
 
 @celery_app.task
 def clone_task(pipeline_id: str):

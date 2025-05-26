@@ -6,11 +6,13 @@ from app.crud import get_commit_message_items_by_pipeline
 from app.database import get_db
 from app.dtos.my_project_result import MyProjectResult
 from app.enums import LanguageEnum
-from app.helpers.utils import div_safe, get_index
+from app.helpers.array_utils import get_index
 from app.helpers.cluster_utils import get_cluster, CENTROIDS, CENTROIDS_NAME, CENTROIDS_DESCRIPTION
 from app.helpers.co_evolution_utils import get_status_evolution, get_code_co_evolution, \
     preprocess_java_test_files, match_java_test_file_optimized
 from app.helpers.generated_text_utils import get_insights
+from app.helpers.math_utils import div_safe
+from app.helpers.string_utils import get_simple_name_path
 from app.logger_config import *
 
 router = APIRouter(
@@ -175,7 +177,11 @@ def code_distribution_details(process: schemas.ProcessBase, db: Session = Depend
         revision_length = len(revisions)
         commit_order = revision_length-1
 
-        contents = crud.get_code_distribution_details_by_pipeline_and_commit_order(db, project_result.id, commit_order)
+        contents = crud.get_tests_data_by_pipeline_and_commit_order(db, project_result.id, commit_order)
+
+        for content in contents:
+            content.file_path = get_simple_name_path(content.file_path, db_additional_data.uses_external_id,
+                                                     pipeline_id)
 
         logger.info(f"{datetime.now()} : END code_distribution_details pipeline_id {pipeline_id}")
 
@@ -183,9 +189,6 @@ def code_distribution_details(process: schemas.ProcessBase, db: Session = Depend
 
         logger.error(f"{datetime.now()} : code_distribution_details pipeline_id {pipeline_id} failed. Error: {e}")
         raise e
-
-    if contents and len(contents) > 0:
-        contents.sort(key=lambda x: x.loc, reverse=True)
 
     return {"contents": contents}
 

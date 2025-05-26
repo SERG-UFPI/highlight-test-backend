@@ -462,7 +462,6 @@ class TestModels(unittest.TestCase):
             id=uuid.uuid4(),
             path="src/main.py",
             loc=150,
-            is_test_file=False,
             commit_order=3,
             language="Python",
             pipeline_id=pipeline.id
@@ -473,7 +472,6 @@ class TestModels(unittest.TestCase):
         retrieved_detail = self.session.query(CodeDistributionDetail).filter_by(path="src/main.py").first()
         self.assertIsNotNone(retrieved_detail)
         self.assertEqual(retrieved_detail.loc, 150)
-        self.assertFalse(retrieved_detail.is_test_file)
         self.assertEqual(retrieved_detail.commit_order, 3)
         self.assertEqual(retrieved_detail.language, "Python")
 
