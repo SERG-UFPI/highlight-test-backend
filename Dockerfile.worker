@@ -8,4 +8,4 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["celery", "-A", "app.celery_config", "worker", "--loglevel=info", "-P", "gevent"]
+CMD ["celery", "-A", "app.celery_config", "worker", "--loglevel=info", "-P", "gevent", "--without-gossip", "--without-mingle", "--without-heartbeat"]
