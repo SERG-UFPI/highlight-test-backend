@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app import schemas, crud
 from app.database import get_db
-from app.helpers.user_utils import get_username_from_token
+from app.helpers.user_utils import get_username_from_token, get_username_or_empty
 from app.security import get_token, can_edit, can_delete
 from fastapi_pagination import Page, paginate
 
@@ -30,7 +30,7 @@ def read_repositories(skip: int = 0, limit: int = 1000, clone_url: Optional[str]
 
 @router.get("/{repository_id}", response_model=schemas.Repository)
 def read_repository_by_id(repository_id: str, db: Session = Depends(get_db), token: str = Depends(get_token)):
-    username = get_username_from_token(token)
+    username = get_username_or_empty(token)
     db_repository = crud.get_repository_by_id_and_username(db, repository_id=repository_id, username=username)
     if db_repository is None:
         raise HTTPException(status_code=404, detail="Repository not found")

@@ -56,6 +56,19 @@ def get_username_from_token(token: str) -> str:
     except:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+def get_username_or_empty(token: str) -> str:
+    """
+    Extract the username from a JWT token.
+    :param token:
+    :return:
+    """
+    try:
+        payload = jwt.decode(token, AUTH_SECRET_KEY, algorithms=[AUTH_ALGORITHM])
+        username: str = payload.get("sub")
+        return username
+    except:
+        return ""
+
 
 def is_weak_password(password: str) -> bool:
     """ Check if the password is weak."""
