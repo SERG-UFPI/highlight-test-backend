@@ -16,6 +16,32 @@ The project leverages the following technologies:
 - **Backend**: Python
 - **Frameworks**: FastAPI
 
+# Project Structure
+
+The repository is organized as follows:
+
+- **`app/`**: Contains the main application code.
+  - **`helpers/`**: Utility functions for data processing and analysis.
+  - **`routers/`**: API endpoints grouped by functionality.
+  - **`tasks/`**: Background tasks for operations like cloning repositories and generating metrics.
+  - **`main.py`**: Entry point for the FastAPI application.
+
+- **`tests/`**: Unit and integration tests for the application.
+
+- **`external/`**: Contains external services used by the application that are essential to its core functionality.
+
+- **`Dockerfile.worker`**: Dockerfile for setting up the worker environment.
+
+- **`requirements.txt`**: Python dependencies required for the project.
+
+- **`README.md`**: Documentation for the project.
+
+- **`.env`**: Environment variables configuration file.
+
+## Supported Environments
+
+The tool has been built and tested to run locally on both Windows and Linux environments. Ensure the necessary dependencies and environment variables are properly configured for your operating system.
+
 ## Installation
 1. Clone the repository:
    ```bash
@@ -55,3 +81,13 @@ The application requires the following environment variables to be set. These ca
 - **GEMINI_API_KEY**: API key for external services.
 
 Ensure these variables are properly set before running the application.
+
+**The frontend for the Highlight Test Code tool is available at:**  
+[https://github.com/SERG-UFPI/highlight-test-frontend](https://github.com/SERG-UFPI/highlight-test-frontend)
+
+**If you do not wish to install and configure the tool locally, you can access the Highlight Test Code platform directly via the web:**  
+[https://highlight-test-frontend.vercel.app](https://highlight-test-frontend.vercel.app)
+
+## Related Publication
+<a id="1" href="http://dx.doi.org/10.1002/smr.70035">[1]</a> Miranda, Charles, et al. "Test Co-Evolution in Software Projects: A Large-Scale Empirical Study." Journal of Software: Evolution and Process. 37, 7 (2025), e70035.<br>
+<a id="2" href="https://zenodo.org/records/15871617">[2]</a> Miranda, Charles, et al. "Highlight Test Code: Visualizing the Co-Evolution of Test and Production Code in Software Repositories." Simpósio Brasileiro de Engenharia de Software (2025).
