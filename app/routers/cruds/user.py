@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app import schemas, crud
 from app.database import get_db
-from app.helpers.user_utils import get_username_from_token
+from app.helpers.user_utils import get_username_from_token, is_weak_password, is_valid_email
 from app.security import get_token
 
 router = APIRouter(
@@ -19,6 +19,13 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     if user.password == "" or user.password != user.confirm_password:
         raise HTTPException(status_code=400, detail="Invalid password or password confirmation")
+
+    if is_weak_password(user.password):
+        raise HTTPException(status_code=400,
+                            detail="Password is too weak. It must have at least 8 characters, including uppercase, lowercase, numbers, and special characters")
+
+    if user.email != "" and not is_valid_email(user.email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
 
     return crud.create_user(db=db, user=user)
 

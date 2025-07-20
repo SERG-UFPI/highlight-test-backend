@@ -2,6 +2,7 @@ import bcrypt
 from fastapi import HTTPException
 from datetime import datetime, timedelta
 import jwt
+import re
 
 from app.config import AUTH_SECRET_KEY, AUTH_ALGORITHM
 
@@ -54,3 +55,42 @@ def get_username_from_token(token: str) -> str:
         return username
     except:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def is_weak_password(password: str) -> bool:
+    """ Check if the password is weak."""
+    if len(password) < 8:
+        return True
+    if not any(char.isupper() for char in password):
+        return True
+    if not any(char.islower() for char in password):
+        return True
+    if not any(char.isdigit() for char in password):
+        return True
+    if not any(char in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/`~" for char in password):
+        return True
+    return False
+
+
+def is_valid_email(email: str) -> bool:
+    """ Validate an email address."""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+    if not email or len(email) > 320:
+        return False
+
+    if not re.match(pattern, email):
+        return False
+
+    username, domain = email.rsplit('@', 1)
+
+    if len(username) > 64:
+        return False
+
+    if len(domain) > 255:
+        return False
+
+    if '..' in email:
+        return False
+
+    return True
