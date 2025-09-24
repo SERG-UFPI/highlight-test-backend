@@ -1,5 +1,6 @@
 import json
 import os
+from ..logger_config import logger
 
 def is_empty(path):
     """
