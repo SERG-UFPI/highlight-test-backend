@@ -16,6 +16,26 @@ The project leverages the following technologies:
 - **Backend**: Python
 - **Frameworks**: FastAPI
 
+---
+
+## Versioning and Changelog
+
+This project follows **semantic versioning**.  
+All notable changes, including **breaking changes**, compatibility constraints, and new features, are documented in the **CHANGELOG** file.
+
+📄 **Changelog file**: [`CHANGELOG.md`](./CHANGELOG.md)
+
+### Important Notes
+- **Backend version 1.0.0** is considered a **stable legacy baseline**.
+- This version **must be used with the frontend version 1.0.0**, as specified in the changelog.
+- Future versions (e.g., `2.0.0`) may introduce **breaking changes**, including:
+  - Changes in API contracts
+  - A new co-evolution model based on explicit production–test file linkage (instead of LOC-based correlation)
+
+Users and developers are strongly encouraged to **check the CHANGELOG before upgrading**.
+
+---
+
 # Project Structure
 
 The repository is organized as follows:
