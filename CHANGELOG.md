@@ -5,3 +5,6 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Initial stable release.
 - LOC-based coevolution analysis using Pearson correlation.
+
+### Compatibility
+- This backend version **must be used with the frontend version 1.0.0**.
