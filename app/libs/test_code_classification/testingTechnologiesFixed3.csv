@@ -264,3 +264,31 @@ Id,Language,Include Regex,Test Framework ,
 282,java,import android.test,Android Testing,
 283,java,import\s+[^;]*test[^;]*,Junit,
 284,java,import +[\w\.]*TestBase,Junit,
+285,ts,"from\s+['\""]@jest/globals['\""]",Jest
+286,ts,\bjest\.(mock|fn|spyOn)\b,Jest
+287,ts,"require\(\s*['\""]@?jest",Jest
+288,ts,\btest\.(each|skip|only)\b.*\bexpect\(,Jest (patterns)
+289,ts,"from\s+['\""]vitest['\""]",Vitest
+290,ts,\bvi\.(mock|fn|spyOn)\b,Vitest
+291,ts,"from\s+['\""]mocha['\""]",Mocha
+292,ts,"require\(\s*['\""]mocha['\""]\s*\)",Mocha
+293,ts,"from\s+['\""]jasmine",Jasmine
+294,ts,\b(jasmine|jasmine-core)\b,Jasmine
+295,ts,"from\s+['\""]@angular/core/testing['\""]",Angular TestBed (Jasmine/Karma)
+296,ts,\bTestBed\b,Angular TestBed (Jasmine/Karma)
+297,ts,"from\s+['\""]@playwright/test['\""]",Playwright
+298,ts,"///\s*<reference\s+types=['\""]cypress['\""]\s*/>",Cypress
+299,ts,\bcy\.\w+\s*\(,Cypress
+300,ts,"from\s+['\""]node:test['\""]",Node.js test runner (node:test)
+301,ts,"require\(\s*['\""]node:test['\""]\s*\)",Node.js test runner (node:test)
+302,ts,"from\s+['\""]ava['\""]",AVA
+303,ts,"from\s+['\""]tape['\""]",Tape
+304,tsx,"from\s+['\""]@testing-library/react['\""]",React Testing Library (Jest)
+305,tsx,\brender\s*\(,React Testing Library
+306,tsx,"from\s+['\""]@jest/globals['\""]",Jest
+307,tsx,\bjest\.(mock|fn|spyOn)\b,Jest
+308,tsx,"from\s+['\""]vitest['\""]",Vitest
+309,tsx,\bvi\.(mock|fn|spyOn)\b,Vitest
+310,tsx,"from\s+['\""]@playwright/test['\""]",Playwright
+311,tsx,"///\s*<reference\s+types=['\""]cypress['\""]\s*/>",Cypress
+312,tsx,\bcy\.\w+\s*\(,Cypress
