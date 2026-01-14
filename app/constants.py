@@ -24,7 +24,7 @@ EXTERNAL_DIR = os.path.join(PARENT_DIRECTORY, "external") + MY_SEPARATOR
 
 TEST_CODE_CLASSIFICATION_DIR = os.path.join(PARENT_DIRECTORY, "app", "libs", "test_code_classification") + MY_SEPARATOR
 
-FILE_EXTENSION_ACCEPTED = ["js","java","py","php","rb", "c", "cpp", "cs", "m", "clj", "go", "hs", "lua", "pl", "r", "rs", "scala", "sh", "swift", "tex", "vim"]
+FILE_EXTENSION_ACCEPTED = ["tsx", "ts", "js","java","py","php","rb", "c", "cpp", "cs", "m", "clj", "go", "hs", "lua", "pl", "r", "rs", "scala", "sh", "swift", "tex", "vim"]
 
 BASE_PROJECTS_FOLDER_NAME = "projects"
 
